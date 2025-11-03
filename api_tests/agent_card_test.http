@@ -1,2 +1,2 @@
-https://migration-pathways-agent-ca4e1c945e86.herokuapp.com/.well-known/agent.json
-# http://localhost:8080/.well-known/agent.json
+# https://migration-pathways-agent-ca4e1c945e86.herokuapp.com/.well-known/agent.json
+http://localhost:8080/.well-known/agent.json

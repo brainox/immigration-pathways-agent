@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,6 +13,9 @@ import (
 
 	"github.com/google/uuid"
 )
+
+//go:embed agent.json
+var agentCardData []byte
 
 // MigrationAgent is the main agent server
 type MigrationAgent struct {
@@ -28,37 +32,9 @@ func NewMigrationAgent() *MigrationAgent {
 	}
 }
 
-// GetAgentCard returns the agent's metadata
-func (a *MigrationAgent) GetAgentCard() *AgentCard {
-	return &AgentCard{
-		Name:        "Migration Pathways Agent",
-		Description: "An AI-powered agent that provides real-time, personalized migration pathway recommendations using Gemini LLM. Get current visa options, costs, requirements, and success probabilities based on your profile and destination country.",
-		URL:         "http://localhost:8080",
-		Version:     "2.0.0",
-		Capabilities: Capabilities{
-			Streaming:              false,
-			PushNotifications:      false,
-			StateTransitionHistory: false,
-		},
-		DefaultInputModes:  []string{"text", "text/plain"},
-		DefaultOutputModes: []string{"text", "text/plain"},
-		Skills: []Skill{
-			{
-				ID:          "get_migration_pathways",
-				Name:        "Get AI-Generated Migration Pathways",
-				Description: "Provides real-time, AI-generated migration pathways based on profession, destination country, origin, and budget using Google's Gemini LLM",
-				Tags:        []string{"migration", "visa", "relocation", "immigration", "ai-powered", "real-time"},
-				Examples: []string{
-					"I'm a software engineer from Nigeria, want to move to Canada, budget $5000",
-					"Data scientist looking to relocate to USA",
-					"How can I migrate to Germany as a software developer?",
-					"What are my options to move to Australia as an engineer with $10k budget?",
-					"Nurse from India wanting to move to UK",
-					"Teacher relocating from Philippines to Canada",
-				},
-			},
-		},
-	}
+// GetAgentCard returns the agent's metadata as raw JSON
+func (a *MigrationAgent) GetAgentCard() []byte {
+	return agentCardData
 }
 
 // ProcessTask handles incoming tasks
@@ -328,7 +304,7 @@ func (a *MigrationAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Handle agent card endpoint
 	if r.URL.Path == "/.well-known/agent.json" && r.Method == "GET" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(a.GetAgentCard())
+		w.Write(a.GetAgentCard())
 		return
 	}
 
@@ -343,8 +319,6 @@ func (a *MigrationAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch req.Method {
 		case "tasks/send":
 			a.handleTasksSend(w, req)
-		case "tasks/get":
-			a.handleTasksGet(w, req)
 		case "message/send":
 			// Telex / some A2A clients send "message/send". Map it to tasks/send behavior.
 			a.handleMessage(w, req)
@@ -382,32 +356,6 @@ func (a *MigrationAgent) handleTasksSend(w http.ResponseWriter, req JSONRPCReque
 	task, err := a.ProcessTask(taskID, params.Message)
 	if err != nil {
 		a.sendError(w, err, -32603, "Internal error", req.ID)
-		return
-	}
-
-	// Send response
-	a.sendSuccess(w, task, req.ID)
-}
-
-// handleTasksGet processes tasks/get RPC method
-func (a *MigrationAgent) handleTasksGet(w http.ResponseWriter, req JSONRPCRequest) {
-	// Parse params
-	paramsJSON, err := json.Marshal(req.Params)
-	if err != nil {
-		a.sendError(w, err, -32602, "Invalid params", req.ID)
-		return
-	}
-
-	var params TaskIDParams
-	if err := json.Unmarshal(paramsJSON, &params); err != nil {
-		a.sendError(w, err, -32602, "Invalid params", req.ID)
-		return
-	}
-
-	// Get task
-	task, err := a.GetTask(params.ID)
-	if err != nil {
-		a.sendError(w, err, -32602, err.Error(), req.ID)
 		return
 	}
 
