@@ -290,7 +290,8 @@ func (a *MigrationAgent) GetTask(taskID string) (*Task, error) {
 }
 
 // ServeHTTP handles HTTP requests
-func (a *MigrationAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeAgentCard serves the embedded agent card JSON
+func (a *MigrationAgent) ServeAgentCard(w http.ResponseWriter, r *http.Request) {
 	// Enable CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -301,34 +302,49 @@ func (a *MigrationAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Handle agent card endpoint
-	if r.URL.Path == "/.well-known/agent.json" && r.Method == "GET" {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(a.GetAgentCard())
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Handle JSON-RPC requests
-	if r.Method == "POST" {
-		var req JSONRPCRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			a.sendError(w, nil, -32700, "Parse error", req.ID)
-			return
-		}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(a.GetAgentCard())
+}
 
-		switch req.Method {
-		case "tasks/send":
-			a.handleTasksSend(w, req)
-		case "message/send":
-			// Telex / some A2A clients send "message/send". Map it to tasks/send behavior.
-			a.handleMessage(w, req)
-		default:
-			a.sendError(w, nil, -32601, "Method not found", req.ID)
-		}
+// HandlePlanner is the A2A protocol endpoint for planner interactions
+// It accepts JSON-RPC 2.0 with methods: tasks/send, tasks/get, and message/send
+func (a *MigrationAgent) HandlePlanner(w http.ResponseWriter, r *http.Request) {
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req JSONRPCRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		a.sendError(w, nil, -32700, "Parse error", req.ID)
+		return
+	}
+
+	switch req.Method {
+	case "tasks/send":
+		a.handleTasksSend(w, req)
+	case "tasks/get":
+		a.handleTasksGet(w, req)
+	case "message/send":
+		a.handleMessage(w, req)
+	default:
+		a.sendError(w, nil, -32601, "Method not found", req.ID)
+	}
 }
 
 // handleTasksSend processes tasks/send RPC method
@@ -409,6 +425,32 @@ func (a *MigrationAgent) handleMessage(w http.ResponseWriter, req JSONRPCRequest
 	a.sendError(w, nil, -32602, "Invalid params for message", req.ID)
 }
 
+// handleTasksGet processes tasks/get RPC method
+func (a *MigrationAgent) handleTasksGet(w http.ResponseWriter, req JSONRPCRequest) {
+	// Parse params
+	paramsJSON, err := json.Marshal(req.Params)
+	if err != nil {
+		a.sendError(w, err, -32602, "Invalid params", req.ID)
+		return
+	}
+
+	var params TaskIDParams
+	if err := json.Unmarshal(paramsJSON, &params); err != nil {
+		a.sendError(w, err, -32602, "Invalid params", req.ID)
+		return
+	}
+
+	// Get task
+	task, err := a.GetTask(params.ID)
+	if err != nil {
+		a.sendError(w, err, -32602, err.Error(), req.ID)
+		return
+	}
+
+	// Send response
+	a.sendSuccess(w, task, req.ID)
+}
+
 // sendSuccess sends a successful JSON-RPC response
 func (a *MigrationAgent) sendSuccess(w http.ResponseWriter, result interface{}, id interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -449,7 +491,9 @@ func main() {
 		log.Println("")
 	}
 
-	http.HandleFunc("/", agent.ServeHTTP)
+	// Register distinct endpoin/ts
+	http.HandleFunc("/.well-known/agent.json", agent.ServeAgentCard)
+	http.HandleFunc("/a2a/planner", agent.HandlePlanner)
 
 	// Heroku (and other platforms) provide the port via the PORT env var.
 	// Fall back to 8080 for local development.

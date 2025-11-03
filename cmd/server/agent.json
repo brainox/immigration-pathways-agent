@@ -7,7 +7,7 @@
     "schema_version": "1.0",
     "channels": {
         "a2a": {
-            "url": "https://migration-pathways-agent-ca4e1c945e86.herokuapp.com",
+            "url": "https://migration-pathways-agent-ca4e1c945e86.herokuapp.com/a2a/planner",
             "supported_methods": [
                 "message/send"
             ],

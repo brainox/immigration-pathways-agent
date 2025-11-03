@@ -1,10 +1,10 @@
 ### Environment Variables
-@host = https://migration-pathways-agent-ca4e1c945e86.herokuapp.com
-# @host = http://localhost:8080
+# @host = https://migration-pathways-agent-ca4e1c945e86.herokuapp.com
+@host = http://localhost:8080
 
 ### Test Sequence: Full Migration Query Flow
 # 1. Send task request
-POST {{host}}/
+POST {{host}}/a2a/planner
 Content-Type: application/json
 
 {
@@ -22,61 +22,4 @@ Content-Type: application/json
         }
     },
     "id": 1
-}
-
-### 2. Get task result (replace task-id with the ID from above response)
-POST {{host}}/
-Content-Type: application/json
-
-{
-    "jsonrpc": "2.0",
-    "method": "tasks/get",
-    "params": {
-        "id": "task-id-here"
-    },
-    "id": 2
-}
-
-### Alternative Queries to Try:
-
-### Healthcare Professional Query
-POST {{host}}/
-Content-Type: application/json
-
-{
-    "jsonrpc": "2.0",
-    "method": "tasks/send",
-    "params": {
-        "message": {
-            "role": "user",
-            "parts": [
-                {
-                    "type": "text",
-                    "text": "I am a nurse from Philippines wanting to move to UK"
-                }
-            ]
-        }
-    },
-    "id": 3
-}
-
-### Tech Professional Query
-POST {{host}}/
-Content-Type: application/json
-
-{
-    "jsonrpc": "2.0",
-    "method": "tasks/send",
-    "params": {
-        "message": {
-            "role": "user",
-            "parts": [
-                {
-                    "type": "text",
-                    "text": "How can I migrate to Germany as a software developer?"
-                }
-            ]
-        }
-    },
-    "id": 4
 }

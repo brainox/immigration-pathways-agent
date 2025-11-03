@@ -3,7 +3,7 @@
 
 ### Test 1: Send Migration Task
 # Creates a new task to generate migration pathways
-POST {{host}}/
+POST {{host}}/a2a/planner
 Content-Type: application/json
 
 {

@@ -4,7 +4,7 @@
 
 ### Test 1: Get Task Status
 # Retrieves the status and results of a migration pathways task
-POST {{host}}/
+POST {{host}}/a2a/planner
 Content-Type: application/json
 
 {
