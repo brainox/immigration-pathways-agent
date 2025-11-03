@@ -9,14 +9,14 @@ Content-Type: application/json
 
 {
     "jsonrpc": "2.0",
-    "method": "tasks/send",
+    "method": "message/send",
     "params": {
         "message": {
             "role": "user",
             "parts": [
                 {
                     "type": "text",
-                    "text": "I am a data scientist from India wanting to move to USA with $10000"
+                    "text": "I am a doctor in mauritius wanting to move to USA with $10000"
                 }
             ]
         }

@@ -174,6 +174,11 @@ func (gc *GeminiClient) GetMigrationPathways(profession, destination, origin str
 func (gc *GeminiClient) buildPrompt(profession, destination, origin string, budget int) string {
 	prompt := `You are a migration planning expert. Provide personalized migration pathway recommendations in a well-structured markdown format.
 
+CRITICAL BEHAVIOR RULES:
+- Never ask the user for additional information.
+- If any profile fields are missing (profession, origin, destination, budget), proceed with best available information and reasonable assumptions.
+- Output exactly one best migration option. Do not include follow-up questions.
+
 USER PROFILE:
 `
 	if profession != "" {
@@ -191,7 +196,7 @@ USER PROFILE:
 
 	prompt += `
 INSTRUCTIONS:
-Research and provide the SINGLE most suitable migration pathway for this profile. Format as follows:
+Research and provide the SINGLE most suitable migration pathway for this profile. If some fields are missing, infer typical constraints for 2024–2025 and proceed without asking questions. Format as follows:
 
 # Best Migration Option: [Visa Name]
 
@@ -205,7 +210,7 @@ Brief overview of why this is the best option for the profile (1-2 sentences).
 
 Next step: [Most important action to take]
 
-IMPORTANT: Be concise. Focus on 2024-2025 requirements. Consider budget constraints.
+IMPORTANT: Be concise. Focus on 2024-2025 requirements. Consider budget constraints. Do not ask for more details.
 
 Generate the response now:`
 
