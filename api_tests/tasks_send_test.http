@@ -8,7 +8,7 @@ Content-Type: application/json
 
 {
     "jsonrpc": "2.0",
-    "method": "tasks/send",
+    "method": "message/send",
     "params": {
         "message": {
             "role": "user",

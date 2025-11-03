@@ -345,6 +345,9 @@ func (a *MigrationAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			a.handleTasksSend(w, req)
 		case "tasks/get":
 			a.handleTasksGet(w, req)
+		case "message/send":
+			// Telex / some A2A clients send "message/send". Map it to tasks/send behavior.
+			a.handleMessage(w, req)
 		default:
 			a.sendError(w, nil, -32601, "Method not found", req.ID)
 		}
@@ -410,6 +413,52 @@ func (a *MigrationAgent) handleTasksGet(w http.ResponseWriter, req JSONRPCReques
 
 	// Send response
 	a.sendSuccess(w, task, req.ID)
+}
+
+// handleMessage maps Telex/A2A `message` calls to the tasks/send flow.
+func (a *MigrationAgent) handleMessage(w http.ResponseWriter, req JSONRPCRequest) {
+	// Try to marshal params into JSON for flexible parsing
+	paramsJSON, err := json.Marshal(req.Params)
+	if err != nil {
+		a.sendError(w, err, -32602, "Invalid params", req.ID)
+		return
+	}
+
+	// Try to parse a wrapper {"message": {...}, "id": "..."}
+	var wrapper struct {
+		Message Message `json:"message"`
+		ID      string  `json:"id"`
+	}
+	if err := json.Unmarshal(paramsJSON, &wrapper); err == nil && (wrapper.Message.Role != "" || len(wrapper.Message.Parts) > 0) {
+		// Use provided ID or generate one
+		taskID := wrapper.ID
+		if taskID == "" {
+			taskID = uuid.New().String()
+		}
+		task, err := a.ProcessTask(taskID, wrapper.Message)
+		if err != nil {
+			a.sendError(w, err, -32603, "Internal error", req.ID)
+			return
+		}
+		a.sendSuccess(w, task, req.ID)
+		return
+	}
+
+	// If wrapper parsing failed, attempt to parse params as the Message itself
+	var msg Message
+	if err := json.Unmarshal(paramsJSON, &msg); err == nil && (msg.Role != "" || len(msg.Parts) > 0) {
+		taskID := uuid.New().String()
+		task, err := a.ProcessTask(taskID, msg)
+		if err != nil {
+			a.sendError(w, err, -32603, "Internal error", req.ID)
+			return
+		}
+		a.sendSuccess(w, task, req.ID)
+		return
+	}
+
+	// If we reach here, params were not in expected formats
+	a.sendError(w, nil, -32602, "Invalid params for message", req.ID)
 }
 
 // sendSuccess sends a successful JSON-RPC response
