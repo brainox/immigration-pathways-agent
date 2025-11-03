@@ -157,94 +157,12 @@ type UserProfile struct {
 }
 
 // parseUserQuery extracts information from user's natural language query
+// This is now simplified - we just extract the budget and pass the full query to Gemini
+// Gemini will extract profession, destination, and origin from the natural language
 func (a *MigrationAgent) parseUserQuery(query string) UserProfile {
 	queryLower := strings.ToLower(query)
 	profile := UserProfile{
 		Budget: 0, // 0 means no budget specified
-	}
-
-	// Extract profession (common ones)
-	professions := map[string]string{
-		"software engineer": "software engineer",
-		"data scientist":    "data scientist",
-		"engineer":          "engineer",
-		"developer":         "developer",
-		"programmer":        "programmer",
-		"doctor":            "doctor",
-		"nurse":             "nurse",
-		"teacher":           "teacher",
-		"accountant":        "accountant",
-		"designer":          "designer",
-		"manager":           "manager",
-		"analyst":           "analyst",
-		"consultant":        "consultant",
-	}
-
-	for key, value := range professions {
-		if strings.Contains(queryLower, key) {
-			profile.Profession = value
-			break
-		}
-	}
-
-	// Extract destination country
-	countries := map[string]string{
-		"canada":         "Canada",
-		"usa":            "USA",
-		"united states":  "USA",
-		"america":        "USA",
-		"uk":             "UK",
-		"united kingdom": "UK",
-		"britain":        "UK",
-		"germany":        "Germany",
-		"australia":      "Australia",
-		"france":         "France",
-		"netherlands":    "Netherlands",
-		"sweden":         "Sweden",
-		"norway":         "Norway",
-		"denmark":        "Denmark",
-		"switzerland":    "Switzerland",
-		"new zealand":    "New Zealand",
-		"singapore":      "Singapore",
-		"japan":          "Japan",
-		"south korea":    "South Korea",
-		"dubai":          "UAE",
-		"uae":            "UAE",
-	}
-
-	for key, value := range countries {
-		if strings.Contains(queryLower, key) {
-			profile.Destination = value
-			break
-		}
-	}
-
-	// Extract origin country
-	origins := map[string]string{
-		"nigeria":      "Nigeria",
-		"ghana":        "Ghana",
-		"kenya":        "Kenya",
-		"south africa": "South Africa",
-		"ethiopia":     "Ethiopia",
-		"egypt":        "Egypt",
-		"morocco":      "Morocco",
-		"tanzania":     "Tanzania",
-		"uganda":       "Uganda",
-		"india":        "India",
-		"pakistan":     "Pakistan",
-		"bangladesh":   "Bangladesh",
-		"philippines":  "Philippines",
-		"china":        "China",
-		"brazil":       "Brazil",
-		"mexico":       "Mexico",
-		"argentina":    "Argentina",
-	}
-
-	for key, value := range origins {
-		if strings.Contains(queryLower, key) {
-			profile.Origin = value
-			break
-		}
 	}
 
 	// Extract budget - look for dollar amounts
@@ -272,6 +190,11 @@ func (a *MigrationAgent) parseUserQuery(query string) UserProfile {
 			fmt.Sscanf(numStr, "%d", &profile.Budget)
 		}
 	}
+
+	// Pass the original query - Gemini will extract profession, destination, and origin
+	profile.Profession = query
+	profile.Destination = query
+	profile.Origin = query
 
 	return profile
 }

@@ -171,32 +171,29 @@ func (gc *GeminiClient) GetMigrationPathways(profession, destination, origin str
 }
 
 // buildPrompt constructs the prompt for Gemini
-func (gc *GeminiClient) buildPrompt(profession, destination, origin string, budget int) string {
+// Now accepts the full user query and lets Gemini extract all information
+func (gc *GeminiClient) buildPrompt(userQuery, _, _ string, budget int) string {
 	prompt := `You are a migration planning expert. Provide personalized migration pathway recommendations in a well-structured markdown format.
 
 CRITICAL BEHAVIOR RULES:
-- Never ask the user for additional information.
-- If any profile fields are missing (profession, origin, destination, budget), proceed with best available information and reasonable assumptions.
-- Output exactly one best migration option. Do not include follow-up questions.
+- Never ask the user for additional information or clarifying questions.
+- Extract profession, origin country, and destination country directly from the user's query.
+- If any information is unclear or missing, make reasonable assumptions and proceed.
+- Output exactly ONE best migration option. Do not include follow-up questions.
 
-USER PROFILE:
+USER QUERY:
+"` + userQuery + `"
 `
-	if profession != "" {
-		prompt += fmt.Sprintf("- Profession: %s\n", profession)
-	}
-	if origin != "" {
-		prompt += fmt.Sprintf("- Current Country: %s\n", origin)
-	}
-	if destination != "" {
-		prompt += fmt.Sprintf("- Destination Country: %s\n", destination)
-	}
 	if budget > 0 {
-		prompt += fmt.Sprintf("- Budget: $%d USD\n", budget)
+		prompt += fmt.Sprintf("\nBUDGET: $%d USD\n", budget)
 	}
 
 	prompt += `
 INSTRUCTIONS:
-Research and provide the SINGLE most suitable migration pathway for this profile. If some fields are missing, infer typical constraints for 2024–2025 and proceed without asking questions. Format as follows:
+1. First, identify from the query: profession, current country (origin), and destination country.
+2. Research and provide the SINGLE most suitable migration pathway for this profile.
+3. If some details are missing, infer reasonable constraints for 2024–2025 and proceed.
+4. Format your response as follows:
 
 # Best Migration Option: [Visa Name]
 
@@ -210,9 +207,7 @@ Brief overview of why this is the best option for the profile (1-2 sentences).
 
 Next step: [Most important action to take]
 
-IMPORTANT: Be concise. Focus on 2024-2025 requirements. Consider budget constraints. Do not ask for more details.
-
-Generate the response now:`
+IMPORTANT: Be concise. Focus on 2024-2025 requirements. Consider budget constraints if provided. Do not ask for more details. Generate the response now:`
 
 	return prompt
 }
