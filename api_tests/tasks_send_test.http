@@ -1,0 +1,38 @@
+### Environment Variables
+@host = http://localhost:8080
+
+### Test 1: Send Migration Task
+# Creates a new task to generate migration pathways
+POST {{host}}/
+Content-Type: application/json
+
+{
+    "jsonrpc": "2.0",
+    "method": "tasks/send",
+    "params": {
+        "message": {
+            "role": "user",
+            "parts": [
+                {
+                    "type": "text",
+                    "text": "I am a software engineer from Nigeria wanting to move to Canada with $5000"
+                }
+            ]
+        }
+    },
+    "id": 1
+}
+
+### Expected Response:
+# {
+#   "jsonrpc": "2.0",
+#   "result": {
+#     "id": "task-id-here",
+#     "status": {
+#       "state": "working",
+#       "message": "Consulting AI to generate personalized migration pathways..."
+#     },
+#     "createdAt": "2025-11-03T..."
+#   },
+#   "id": 1
+# }

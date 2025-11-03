@@ -1,0 +1,57 @@
+### Environment Variables
+@host = http://localhost:8080
+@taskId = dcd94b07-769c-4b30-b664-ce484aee364b
+
+### Test 1: Get Task Status
+# Retrieves the status and results of a migration pathways task
+POST {{host}}/
+Content-Type: application/json
+
+{
+    "jsonrpc": "2.0",
+    "method": "tasks/get",
+    "params": {
+        "id": "{{taskId}}"
+    },
+    "id": 2
+}
+
+### Expected Response When Complete:
+# {
+#   "jsonrpc": "2.0",
+#   "result": {
+#     "id": "task-id-here",
+#     "status": {
+#       "state": "completed",
+#       "message": "Migration pathways generated successfully"
+#     },
+#     "artifacts": [
+#       {
+#         "parts": [
+#           {
+#             "type": "text",
+#             "text": "# Migration Pathways for Software Engineer to Canada\n\n..."
+#           }
+#         ]
+#       }
+#     ],
+#     "createdAt": "2025-11-03T...",
+#     "updatedAt": "2025-11-03T..."
+#   },
+#   "id": 2
+# }
+
+### Expected Response While Working:
+# {
+#   "jsonrpc": "2.0",
+#   "result": {
+#     "id": "task-id-here",
+#     "status": {
+#       "state": "working",
+#       "message": "Consulting AI to generate personalized migration pathways..."
+#     },
+#     "createdAt": "2025-11-03T...",
+#     "updatedAt": "2025-11-03T..."
+#   },
+#   "id": 2
+# }

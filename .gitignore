@@ -1,0 +1,59 @@
+# Environment files
+.env
+*.env
+.env.*
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Build output
+bin/
+dist/
+
+# Go Debug files
+__debug_bin
+debug.test
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Log files
+*.log
+
+# Local development files
+*.local
+local.*
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*~
+
+# Binary output directories
+cmd/server/server
+cmd/client/client
+migration-pathways-agent
