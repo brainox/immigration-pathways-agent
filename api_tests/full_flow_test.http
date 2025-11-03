@@ -1,4 +1,5 @@
 ### Environment Variables
+# @host = https://migration-pathways-agent-ca4e1c945e86.herokuapp.com
 @host = http://localhost:8080
 
 ### Test Sequence: Full Migration Query Flow

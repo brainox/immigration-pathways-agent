@@ -63,13 +63,16 @@ func (a *MigrationAgent) GetAgentCard() *AgentCard {
 
 // ProcessTask handles incoming tasks
 func (a *MigrationAgent) ProcessTask(taskID string, message Message) (*Task, error) {
+	// Generate a message ID
+	messageID := uuid.New().String()
+
 	// Create task
 	task := &Task{
-		ID:      taskID,
-		Message: message,
+		ID:   taskID,
+		Kind: "task",
 		Status: TaskStatus{
-			State:   "working",
-			Message: "Consulting AI to generate personalized migration pathways...",
+			State:     "working",
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
 		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -99,32 +102,61 @@ func (a *MigrationAgent) ProcessTask(taskID string, message Message) (*Task, err
 		profile.Origin,
 		profile.Budget,
 	)
-	
+
 	if err != nil {
 		// Update task with error
 		task.Status = TaskStatus{
-			State:   "failed",
-			Message: fmt.Sprintf("Failed to generate pathways: %v", err),
+			State:     "failed",
+			Timestamp: time.Now().UTC().Format(time.RFC3339),
+			Message: &StatusMessage{
+				Kind: "message",
+				Role: "agent",
+				Parts: []Part{
+					{
+						Kind: "text",
+						Text: fmt.Sprintf("Failed to generate pathways: %v", err),
+					},
+				},
+				MessageID: messageID,
+				TaskID:    taskID,
+			},
 		}
 		task.UpdatedAt = time.Now()
-		
+
 		a.mu.Lock()
 		a.tasks[taskID] = task
 		a.mu.Unlock()
-		
+
 		return task, err
 	}
 
+	// Generate artifact ID
+	artifactID := uuid.New().String()
+
 	// Update task with result
 	task.Status = TaskStatus{
-		State:   "completed",
-		Message: "Migration pathways generated successfully",
+		State:     "completed",
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Message: &StatusMessage{
+			Kind: "message",
+			Role: "agent",
+			Parts: []Part{
+				{
+					Kind: "text",
+					Text: responseText,
+				},
+			},
+			MessageID: messageID,
+			TaskID:    taskID,
+		},
 	}
 	task.Artifacts = []Artifact{
 		{
+			ArtifactID: artifactID,
+			Name:       "Migration Pathway Recommendation",
 			Parts: []Part{
 				{
-					Type: "text",
+					Kind: "text",
 					Text: responseText,
 				},
 			},
@@ -157,21 +189,21 @@ func (a *MigrationAgent) parseUserQuery(query string) UserProfile {
 
 	// Extract profession (common ones)
 	professions := map[string]string{
-		"software engineer":  "software engineer",
-		"data scientist":     "data scientist",
-		"engineer":           "engineer",
-		"developer":          "developer",
-		"programmer":         "programmer",
-		"doctor":             "doctor",
-		"nurse":              "nurse",
-		"teacher":            "teacher",
-		"accountant":         "accountant",
-		"designer":           "designer",
-		"manager":            "manager",
-		"analyst":            "analyst",
-		"consultant":         "consultant",
+		"software engineer": "software engineer",
+		"data scientist":    "data scientist",
+		"engineer":          "engineer",
+		"developer":         "developer",
+		"programmer":        "programmer",
+		"doctor":            "doctor",
+		"nurse":             "nurse",
+		"teacher":           "teacher",
+		"accountant":        "accountant",
+		"designer":          "designer",
+		"manager":           "manager",
+		"analyst":           "analyst",
+		"consultant":        "consultant",
 	}
-	
+
 	for key, value := range professions {
 		if strings.Contains(queryLower, key) {
 			profile.Profession = value
@@ -181,29 +213,29 @@ func (a *MigrationAgent) parseUserQuery(query string) UserProfile {
 
 	// Extract destination country
 	countries := map[string]string{
-		"canada":          "Canada",
-		"usa":             "USA",
-		"united states":   "USA",
-		"america":         "USA",
-		"uk":              "UK",
-		"united kingdom":  "UK",
-		"britain":         "UK",
-		"germany":         "Germany",
-		"australia":       "Australia",
-		"france":          "France",
-		"netherlands":     "Netherlands",
-		"sweden":          "Sweden",
-		"norway":          "Norway",
-		"denmark":         "Denmark",
-		"switzerland":     "Switzerland",
-		"new zealand":     "New Zealand",
-		"singapore":       "Singapore",
-		"japan":           "Japan",
-		"south korea":     "South Korea",
-		"dubai":           "UAE",
-		"uae":             "UAE",
+		"canada":         "Canada",
+		"usa":            "USA",
+		"united states":  "USA",
+		"america":        "USA",
+		"uk":             "UK",
+		"united kingdom": "UK",
+		"britain":        "UK",
+		"germany":        "Germany",
+		"australia":      "Australia",
+		"france":         "France",
+		"netherlands":    "Netherlands",
+		"sweden":         "Sweden",
+		"norway":         "Norway",
+		"denmark":        "Denmark",
+		"switzerland":    "Switzerland",
+		"new zealand":    "New Zealand",
+		"singapore":      "Singapore",
+		"japan":          "Japan",
+		"south korea":    "South Korea",
+		"dubai":          "UAE",
+		"uae":            "UAE",
 	}
-	
+
 	for key, value := range countries {
 		if strings.Contains(queryLower, key) {
 			profile.Destination = value
@@ -213,25 +245,25 @@ func (a *MigrationAgent) parseUserQuery(query string) UserProfile {
 
 	// Extract origin country
 	origins := map[string]string{
-		"nigeria":       "Nigeria",
-		"ghana":         "Ghana",
-		"kenya":         "Kenya",
-		"south africa":  "South Africa",
-		"ethiopia":      "Ethiopia",
-		"egypt":         "Egypt",
-		"morocco":       "Morocco",
-		"tanzania":      "Tanzania",
-		"uganda":        "Uganda",
-		"india":         "India",
-		"pakistan":      "Pakistan",
-		"bangladesh":    "Bangladesh",
-		"philippines":   "Philippines",
-		"china":         "China",
-		"brazil":        "Brazil",
-		"mexico":        "Mexico",
-		"argentina":     "Argentina",
+		"nigeria":      "Nigeria",
+		"ghana":        "Ghana",
+		"kenya":        "Kenya",
+		"south africa": "South Africa",
+		"ethiopia":     "Ethiopia",
+		"egypt":        "Egypt",
+		"morocco":      "Morocco",
+		"tanzania":     "Tanzania",
+		"uganda":       "Uganda",
+		"india":        "India",
+		"pakistan":     "Pakistan",
+		"bangladesh":   "Bangladesh",
+		"philippines":  "Philippines",
+		"china":        "China",
+		"brazil":       "Brazil",
+		"mexico":       "Mexico",
+		"argentina":    "Argentina",
 	}
-	
+
 	for key, value := range origins {
 		if strings.Contains(queryLower, key) {
 			profile.Origin = value
@@ -254,7 +286,7 @@ func (a *MigrationAgent) parseUserQuery(query string) UserProfile {
 				break
 			}
 		}
-		
+
 		// Handle 'k' suffix (e.g., $5k = $5000)
 		if idx+len(numStr)+1 < len(queryLower) && queryLower[idx+len(numStr)+1] == 'k' {
 			if budget, err := fmt.Sscanf(numStr, "%d", &profile.Budget); err == nil && budget == 1 {
